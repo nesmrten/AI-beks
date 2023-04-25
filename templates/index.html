@@ -1,12 +1,19 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <div class="container">
-    <h1>Login</h1>
-    <form method="post">
-      <input type="email" name="email" placeholder="Email" required><br>
-      <input type="password" name="password" placeholder="Password" required autocomplete="off">
-      <button type="submit">Login</button>
-    </form>
+<div class="container">
+  </nav>
+  <h1>AI Chatbot</h1>
+  <div id="chatbox">
+    <div class="chatbot-msg">
+      Welcome to the AI Chatbot! How can I assist you?
+    </div>
   </div>
+  <form id="user-input-form">
+    <input type="text" id="user-input" placeholder="Enter your message" autocomplete="off" required />
+    <button type="submit">Send</button>
+  </form>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 {% endblock %}

@@ -1,14 +1,18 @@
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask_login import current_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
 from flask_wtf.csrf import generate_csrf
 from config import Config
 from sqlalchemy.exc import IntegrityError
 import secrets
 import string
+from datetime import datetime, timedelta
 from forms import RegistrationForm
+from forms import LoginForm
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -49,24 +53,22 @@ class User(db.Model, UserMixin):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-@app.route("/")
-def index():
+@app.route("/home")
+def home():
     return render_template("index.html")
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-        user = User.query.filter_by(email=email).first()
-        if user and check_password_hash(user.password, password):
-            # Log the user in
-            session["user_id"] = user.id
-            flash('Login successful!', 'success')
-            return redirect(url_for('index'))
-        flash('Invalid email or password', 'error')
-    csrf_token = generate_csrf() 
-    return render_template("login.html", csrf_token=csrf_token)
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and user.check_password(form.password.data):
+            login_user(user, remember=form.remember_me.data)
+            return redirect(url_for('home'))
+        else:
+            flash('Invalid email or password')
+            return redirect(url_for('login'))
+    return render_template('login.html', title='Sign In', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -80,7 +82,8 @@ def register():
             return redirect(url_for('login'))
         except IntegrityError:
             db.session.rollback()
-            flash('Email address is already in use. Please choose a different email address.')
+            flash(
+                'Email address is already in use. Please choose a different email address.')
             return redirect(url_for('register'))
     return render_template('register.html', title='Register', form=form)
 
@@ -95,12 +98,16 @@ def signup():
         return redirect(url_for('login'))
     return render_template("signup.html")
 
-
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+@app.route('/protected')
+@login_required
+def protected():
+    return 'protected.html'
 
 @app.route('/get', methods=['POST'])
 def get_bot_response():

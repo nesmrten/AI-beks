@@ -8,6 +8,12 @@
     <title>{% block title %}Flask App{% endblock %}</title>
   </head>
   <body>
+    <nav>
+      <ul>
+        <li><a href="/home">Home</a></li>
+        <li><a href="/logout">Logout</a></li>
+      </ul>
+    </nav>
     <div class="container">
       {% for message in get_flashed_messages() %}
         <div class="alert alert-success">

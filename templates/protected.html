@@ -1,12 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <title>Protected</title>
-</head>
-<body>
-    <h1>Protected Page</h1>
-    <p>This is a protected page. Only logged-in users can access it.</p>
+{% if current_user.is_authenticated %}
+    <h1>Welcome, {{ current_user.email }}!</h1>
+    <!-- display protected content here -->
     <a href="{{ url_for('logout') }}">Logout</a>
-</body>
-</html>
+{% else %}
+    <p>Please log in to access this page.</p>
+    <a href="{{ url_for('login') }}">Login</a>
+{% endif %}
