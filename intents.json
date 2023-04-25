@@ -1,0 +1,58 @@
+{
+  "intents": [
+    {
+      "tag": "greeting",
+      "patterns": ["Hi", "Hello", "Hey", "Greetings", "Is anyone there?", "Good day"],
+      "responses": ["Hello!", "Hi there!", "Hey!", "Welcome! How can I help you today?"]
+    },
+    {
+      "tag": "goodbye",
+      "patterns": ["Goodbye", "Bye", "See you later", "Farewell", "Take care"],
+      "responses": ["Goodbye! Have a great day!", "Bye! Come back again soon.", "Take care! See you later."]
+    },
+    {
+      "tag": "thanks",
+      "patterns": ["Thanks", "Thank you", "I appreciate it", "Cheers", "Thanks a lot"],
+      "responses": ["You're welcome!", "No problem! Let me know if there's anything else I can help with.", "I'm happy to help!"]
+    },
+    {
+      "tag": "about",
+      "patterns": ["What do you do?", "What can you help me with?", "Tell me more about yourself", "What's your purpose?"],
+      "responses": [
+        "I'm an AI chatbot here to help you with your questions and provide information.",
+        "I can help answer your questions, provide recommendations, or help with general information."
+      ]
+    },
+    {
+      "tag": "weather",
+      "patterns": ["What's the weather like?", "Is it raining today?", "Will it be sunny tomorrow?", "What's the temperature outside?"],
+      "responses": [
+        "I'm sorry, I can't provide real-time weather information. Please check a weather website or app for the latest updates.",
+        "Unfortunately, I don't have access to real-time weather data. Please use a dedicated weather service for accurate information."
+      ]
+    },
+    {
+      "tag": "name",
+      "patterns": ["What's your name?", "Who are you?", "What can I call you?"],
+      "responses": ["You can call me Chatbot!", "My name is Chatbot, and I'm here to help you."]
+    },
+    {
+      "tag": "help",
+      "patterns": ["I need help", "Can you help me?", "I don't know what to do"],
+      "responses": [
+        "Of course! What do you need help with?",
+        "I'm here to help. Please let me know how I can assist you.",
+        "Sure, what can I help you with?"
+      ]
+    },
+    {
+      "tag": "unknown",
+      "patterns": [],
+      "responses": [
+        "I'm not sure I understand. Can you please rephrase your question?",
+        "I'm sorry, I don't have an answer for that. Can you try asking another question?",
+        "I'm not certain what you're asking. Could you please rephrase your question or provide more information?"
+      ]
+    }
+  ]
+}
