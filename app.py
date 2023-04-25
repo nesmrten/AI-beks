@@ -10,7 +10,6 @@ import secrets
 import string
 from forms import RegistrationForm
 
-
 app = Flask(__name__)
 app.config.from_object(Config)
 
@@ -50,9 +49,8 @@ class User(db.Model, UserMixin):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-@app.route('/')
-@login_required
-def home():
+@app.route("/")
+def index():
     return render_template("index.html")
 
 @app.route("/login", methods=["GET", "POST"])
@@ -64,12 +62,11 @@ def login():
         if user and check_password_hash(user.password, password):
             # Log the user in
             session["user_id"] = user.id
-        flash('Login successful!') 
-        return redirect("/index.html")
-    else: 
-        flash("Invalid email or password", "error") 
-        csrf_token = generate_csrf() 
-        return render_template("login.html", csrf_token=csrf_token)
+            flash('Login successful!', 'success')
+            return redirect(url_for('index'))
+        flash('Invalid email or password', 'error')
+    csrf_token = generate_csrf() 
+    return render_template("login.html", csrf_token=csrf_token)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
