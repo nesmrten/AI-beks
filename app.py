@@ -1,65 +1,66 @@
-import random
+from flask import Flask, request, jsonify
+from keras.models import load_model
 import json
 import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-from flask import Flask, render_template, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from tensorflow.keras.layers import TextVectorization
+import nltk
+from nltk.stem import WordNetLemmatizer
+import random
 
 app = Flask(__name__)
-app.config.from_object('config.Config')
 
-# Initialize the database object
-db = SQLAlchemy(app)
+lemmatizer = WordNetLemmatizer()
 
-# Push an application context
-app.app_context().push()
+def clean_sentence(sentence):
+    sentence_words = nltk.word_tokenize(sentence)
+    sentence_words = [lemmatizer.lemmatize(word.lower()) for word in sentence_words]
+    return sentence_words
 
-# Load the saved model
-from tensorflow.keras.models import load_model
-model = load_model("chatbot_model.h5")
+def bag_of_words(sentence, words):
+    sentence_words = clean_sentence(sentence)
+    bag = [0] * len(words)
+    for w in sentence_words:
+        for i, word in enumerate(words):
+            if word == w:
+                bag[i] = 1
 
-# Load the intents file
-with open("intents.json", "r") as file: 
-    intents = json.load(file)
+    return np.array(bag)
 
-# Load the tokenizer object
-vocab_size = 10000
-vectorizer = TextVectorization(max_tokens=vocab_size, output_mode="int", output_sequence_length=30)
+@app.route("/api/chatbot", methods=["POST"])
+def get_response():
+    user_msg = request.json["message"]
 
-# Initialize the vectorizer
-db.metadata.reflect(bind=db.engine, views=True)
-questions = db.session.query(db.metadata.tables['questions'].columns.text).all()
-questions = np.array(questions).ravel()
-vectorizer.adapt(questions)
+    with open("intents.json", "r") as file:
+        intents = json.load(file)
 
-@app.route("/")
-def home(): 
-    return render_template("index.html")
+    with open("words.json", "r") as file:
+        words = json.load(file)
 
-@app.route("/chat")
-def chat(): 
-    return render_template("chat.html")
+    # Load the classes
+    with open("classes.json", "r") as file:
+        classes = json.load(file)
 
-@app.route("/get", methods=["POST"])
-def get_bot_response():
-    message = request.form["msg"]
-    if message.strip() == "": 
-        return jsonify({"response": "Please enter your message!"})
+    # Load the saved model
+    model = load_model("chatbot_model.h5")
 
-    message = np.array([message])
-    message = vectorizer(message)
-    prediction = model.predict(message)
-    tag = intents[np.argmax(prediction)]["tag"]
-    responses = intents[np.argmax(prediction)]["responses"]
-    bot_response = random.choice(responses) 
-    return jsonify({"response": bot_response})
+    # Predict the intent of the user's message
+    bag = bag_of_words(user_msg, words)
+    res = model.predict(np.array([bag]))[0]
+    ERROR_THRESHOLD = 0.25
+    results = [[i, r] for i, r in enumerate(res) if r > ERROR_THRESHOLD]
+
+    results.sort(key=lambda x: x[1], reverse=True)
+    return_list = []
+    for r in results:
+        return_list.append({"intent": classes[r[0]], "probability": str(r[1])})
+
+    tag = return_list[0]["intent"]
+    list_of_intents = intents["intents"]
+    for i in list_of_intents:
+        if i["tag"] == tag:
+            result = random.choice(i["responses"])
+            break
+
+    return jsonify({"response": result})
 
 if __name__ == "__main__":
-    # Define the table initializer here
-    table_initializer = db.metadata.tables['questions'].insert().values(text="Hello", tag="greeting")
-    db.session.execute(table_initializer)
-    db.session.commit()
-
     app.run(debug=True)

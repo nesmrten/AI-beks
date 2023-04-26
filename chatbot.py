@@ -70,3 +70,46 @@ with open("chatbot_model.json", "w") as json_file:
     json_file.write(model_json)
 model.save_weights("chatbot_model.h5")
 print("Model saved to disk.")
+
+
+def clean_sentence(sentence):
+    tokens = word_tokenize(sentence)
+    sentence_words = [lemmatizer.lemmatize(word.lower()) for word in tokens]
+    return sentence_words
+
+
+def bow(sentence, words, show_details=True):
+    sentence_words = clean_sentence(sentence)
+    bag = [0] * len(words)
+    for s in sentence_words:
+        for i, w in enumerate(words):
+            if w == s:
+                bag[i] = 1
+                if show_details:
+                    print(f"found in bag: {w}")
+    return np.array(bag)
+
+
+def predict_intent(sentence):
+    # load the saved model
+    json_file = open('chatbot_model.json', 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    loaded_model = model_from_json(loaded_model_json)
+    # load weights into new model
+    loaded_model.load_weights("chatbot_model.h5")
+    print("Loaded model from disk")
+
+    # predict output
+    p = bow(sentence, words, show_details=False)
+    prediction = loaded_model.predict(np.array([p]))[0]
+    error_threshold = 0.25
+    results = [[i, r] for i, r in enumerate(prediction) if r > error_threshold]
+
+   # sort by probability score and only keep the most probable one
+    results = [[i, r] for i, r in enumerate(predictions) if r > 0.25]
+    results.sort(key=lambda x: x[1], reverse=True)
+    return_list = []
+    for r in results:
+        return_list.append({"intent": labels[r[0]], "probability": str(r[1])})
+    return return_list
