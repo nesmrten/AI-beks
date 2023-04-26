@@ -9,7 +9,12 @@ from tensorflow.keras.layers import TextVectorization
 
 app = Flask(__name__)
 app.config.from_object('config.Config')
+
+# Initialize the database object
 db = SQLAlchemy(app)
+
+# Push an application context
+app.app_context().push()
 
 # Load the saved model
 from tensorflow.keras.models import load_model
@@ -24,6 +29,7 @@ vocab_size = 10000
 vectorizer = TextVectorization(max_tokens=vocab_size, output_mode="int", output_sequence_length=30)
 
 # Initialize the vectorizer
+db.metadata.reflect(bind=db.engine, views=True)
 questions = db.session.query(db.metadata.tables['questions'].columns.text).all()
 questions = np.array(questions).ravel()
 vectorizer.adapt(questions)
