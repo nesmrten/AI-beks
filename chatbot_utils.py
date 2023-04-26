@@ -2,10 +2,10 @@ import numpy as np
 import nltk
 from nltk.stem import WordNetLemmatizer
 import json
-import pickle
 import keras
 import random
 from web_scraper import search
+
 
 lemmatizer = WordNetLemmatizer()
 
@@ -13,14 +13,17 @@ def load_data():
     with open("intents.json", "r") as file:
         intents = json.load(file)
 
-    with open("words.pkl", "rb") as f: 
-      words = pickle.load(f)
+    with open("words.json", "r") as file:
+        words = json.load(file)
 
-    with open("classes.pkl", "rb") as f: 
-      classes = pickle.load(f)
-      
+    with open("classes.json", "r") as file:
+        classes = json.load(file)
+
     # Load the saved model
-    model = keras.models.load_model("chatbot_model.h5")
+    with open('chatbot_model.json', 'r') as file:
+        model_json = file.read()
+    model = keras.models.model_from_json(model_json)
+    model.load_weights("chatbot_model.h5")
 
     return words, classes, intents, model
 

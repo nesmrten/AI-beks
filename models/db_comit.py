@@ -15,5 +15,6 @@ class User(db.Model):
 with app.app_context():
     if not User.__table__.columns.get('token_expiration'):
         with db.session.begin():
+            db.session.execute(text('ALTER TABLE users ADD COLUMN token_expiration TIMESTAMP'))
             db.session.execute(text('ALTER TABLE user ADD COLUMN token_expiration TIMESTAMP'))
 

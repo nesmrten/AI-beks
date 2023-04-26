@@ -1,5 +1,4 @@
 import json
-import pickle
 import numpy as np
 import nltk
 from nltk.stem import WordNetLemmatizer
@@ -7,12 +6,14 @@ from sklearn.preprocessing import LabelBinarizer
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Activation, Dropout
 from tensorflow.keras.optimizers import SGD
+
 nltk.download("punkt")
 nltk.download("wordnet")
 
 lemmatizer = WordNetLemmatizer()
 
-intents = json.loads(open("intents.json").read())
+with open("intents.json") as file:
+    intents = json.load(file)
 
 words = []
 classes = []
@@ -32,8 +33,11 @@ words = sorted(list(set(words)))
 
 classes = sorted(list(set(classes)))
 
-pickle.dump(words, open("words.pkl", "wb"))
-pickle.dump(classes, open("classes.pkl", "wb"))
+with open("words.json", "w") as f:
+    json.dump(words, f)
+
+with open("classes.json", "w") as f:
+    json.dump(classes, f)
 
 training = []
 output_empty = [0] * len(classes)

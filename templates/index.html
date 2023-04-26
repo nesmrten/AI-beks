@@ -3,17 +3,8 @@
 {% block content %}
 <div class="container">
   </nav>
+  <div id="avatar-container" style="width: 300px; height: 300px;"></div>
   <h1>AI Chatbot</h1>
-  <div id="chatbox">
-    <div class="chatbot-msg">
-      Welcome to the AI Chatbot! How can I assist you?
-    </div>
-  </div>
-  <form id="user-input-form">
-    <input type="text" id="user-input" placeholder="Enter your message" autocomplete="off" required />
-    <button type="submit">Send</button>
-  </form>
+  <a href="{{ url_for('chat') }}">Click here to start chatting with the AI chatbot</a>
 </div>
-
-<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 {% endblock %}

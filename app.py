@@ -1,120 +1,59 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
-from flask_login import current_user, login_required
+import random
+import json
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
-from flask_wtf.csrf import generate_csrf
-from config import Config
-from sqlalchemy.exc import IntegrityError
-import secrets
-import string
-from datetime import datetime, timedelta
-from forms import RegistrationForm
-from forms import LoginForm
-
+from tensorflow.keras.layers import TextVectorization
 
 app = Flask(__name__)
-app.config.from_object(Config)
-
+app.config.from_object('config.Config')
 db = SQLAlchemy(app)
 
-migrate = Migrate(app, db)
+# Load the saved model
+from tensorflow.keras.models import load_model
+model = load_model("chatbot_model.h5")
 
-# Function to create the database automatically on the first run
-@app.before_first_request
-def create_tables():
-    db.create_all()
+# Load the intents file
+with open("intents.json", "r") as file: 
+    intents = json.load(file)
 
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = "login"
+# Load the tokenizer object
+vocab_size = 10000
+vectorizer = TextVectorization(max_tokens=vocab_size, output_mode="int", output_sequence_length=30)
 
-class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
-    token = db.Column(db.String(32), nullable=True)
-    token_expiration = db.Column(db.DateTime, nullable=True)
+# Initialize the vectorizer
+questions = db.session.query(db.metadata.tables['questions'].columns.text).all()
+questions = np.array(questions).ravel()
+vectorizer.adapt(questions)
 
-    def generate_reset_token(self):
-        self.token = secrets.token_urlsafe(16)
-        self.token_expiration = datetime.utcnow() + timedelta(hours=1)
-        db.session.commit()
-        return self.token
-
-    def reset_password(self, password):
-        self.password = generate_password_hash(password)
-        self.token = None
-        self.token_expiration = None
-        db.session.commit()
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-@app.route("/home")
-def home():
+@app.route("/")
+def home(): 
     return render_template("index.html")
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and user.check_password(form.password.data):
-            login_user(user, remember=form.remember_me.data)
-            return redirect(url_for('home'))
-        else:
-            flash('Invalid email or password')
-            return redirect(url_for('login'))
-    return render_template('login.html', title='Sign In', form=form)
+@app.route("/chat")
+def chat(): 
+    return render_template("chat.html")
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        user = User(email=form.email.data, password=form.password.data)
-        try:
-            db.session.add(user)
-            db.session.commit()
-            flash('Registration successful!')
-            return redirect(url_for('login'))
-        except IntegrityError:
-            db.session.rollback()
-            flash(
-                'Email address is already in use. Please choose a different email address.')
-            return redirect(url_for('register'))
-    return render_template('register.html', title='Register', form=form)
-
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        new_user = User(email=email, password=password)
-        db.session.add(new_user)
-        db.session.commit()
-        return redirect(url_for('login'))
-    return render_template("signup.html")
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('login'))
-
-@app.route('/protected')
-@login_required
-def protected():
-    return 'protected.html'
-
-@app.route('/get', methods=['POST'])
+@app.route("/get", methods=["POST"])
 def get_bot_response():
-    userText = request.form['msg']
-    # Your custom AI logic goes here
-    bot_response = "This is the response from your custom AI."
+    message = request.form["msg"]
+    if message.strip() == "": 
+        return jsonify({"response": "Please enter your message!"})
+
+    message = np.array([message])
+    message = vectorizer(message)
+    prediction = model.predict(message)
+    tag = intents[np.argmax(prediction)]["tag"]
+    responses = intents[np.argmax(prediction)]["responses"]
+    bot_response = random.choice(responses) 
     return jsonify({"response": bot_response})
 
 if __name__ == "__main__":
+    # Define the table initializer here
+    table_initializer = db.metadata.tables['questions'].insert().values(text="Hello", tag="greeting")
+    db.session.execute(table_initializer)
+    db.session.commit()
+
     app.run(debug=True)

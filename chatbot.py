@@ -1,65 +1,72 @@
 import json
-import nltk
 import numpy as np
 import random
 from keras.models import Sequential
 from keras.layers import Dense
 from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
 
 lemmatizer = WordNetLemmatizer()
-nltk.download('punkt')
-nltk.download('wordnet')
 
-with open('intents.json', 'r') as file:
-    intents = json.load(file)
+with open('intents.json') as file:
+    data = json.load(file)
 
 words = []
-classes = []
-documents = []
+labels = []
+docs = []
 
-for intent in intents['intents']:
+for intent in data['intents']:
     for pattern in intent['patterns']:
-        tokens = nltk.word_tokenize(pattern)
+        # tokenize each word in the pattern
+        tokens = word_tokenize(pattern)
         words.extend(tokens)
-        documents.append((tokens, intent['tag']))
-        if intent['tag'] not in classes:
-            classes.append(intent['tag'])
+        docs.append((tokens, intent['tag']))
+        if intent['tag'] not in labels:
+            labels.append(intent['tag'])
 
-words = sorted(list(set([lemmatizer.lemmatize(word.lower()) for word in words])))
+# lemmatize and lower case each word, remove duplicates and sort
+words = sorted(list(set([lemmatizer.lemmatize(w.lower()) for w in words])))
 
-# Preprocessing
+# sort labels alphabetically
+labels = sorted(labels)
+
+# create training data
 training = []
-output_empty = [0] * len(classes)
+output_empty = [0] * len(labels)
 
-for doc in documents:
+for doc in docs:
     bag = []
-    pattern_words = doc[0]
-    pattern_words = [lemmatizer.lemmatize(word.lower()) for word in pattern_words]
-    for word in words:
-        bag.append(1) if word in pattern_words else bag.append(0)
+    token_words = doc[0]
+    token_words = [lemmatizer.lemmatize(word.lower()) for word in token_words]
+    for w in words:
+        bag.append(1) if w in token_words else bag.append(0)
 
     output_row = list(output_empty)
-    output_row[classes.index(doc[1])] = 1
+    output_row[labels.index(doc[1])] = 1
     training.append([bag, output_row])
 
+# shuffle and convert to numpy array
 random.shuffle(training)
-training = np.array(training, dtype=object)
+training = np.array(training)
 
 train_x = list(training[:, 0])
 train_y = list(training[:, 1])
 
-# Build a neural network
+# define model architecture
 model = Sequential()
 model.add(Dense(128, input_shape=(len(train_x[0]),), activation='relu'))
 model.add(Dense(64, activation='relu'))
 model.add(Dense(len(train_y[0]), activation='softmax'))
 
+# compile model
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-# Save the data variables to a file
-import pickle
 
-with open('data.pickle', 'wb') as f:
-    pickle.dump((words, classes, train_x, train_y), f)
-# Train the model
+# train model
 model.fit(np.array(train_x), np.array(train_y), epochs=200, batch_size=5, verbose=1)
-model.save('chatbot_model.h5')
+
+# save the model architecture and weights
+model_json = model.to_json()
+with open("chatbot_model.json", "w") as json_file:
+    json_file.write(model_json)
+model.save_weights("chatbot_model.h5")
+print("Model saved to disk.")

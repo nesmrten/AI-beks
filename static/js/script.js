@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 },
                 body: "msg=" + encodeURIComponent(userMsg)
             })
+            
                 .then(response => response.json())
                 .then(data => {
                     appendMessage("chatbot-msg", data["response"]);
