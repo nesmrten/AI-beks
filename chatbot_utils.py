@@ -1,11 +1,12 @@
+from torch import nn
+from train_chatbot import ChatbotModel
 import numpy as np
 import nltk
 from nltk.stem import WordNetLemmatizer
 import json
-import keras
+import torch
 import random
 from web_scraper import search
-
 
 lemmatizer = WordNetLemmatizer()
 
@@ -20,12 +21,32 @@ def load_data():
         classes = json.load(file)
 
     # Load the saved model
-    with open('chatbot_model.json', 'r') as file:
-        model_json = file.read()
-    model = keras.models.model_from_json(model_json)
-    model.load_weights("chatbot_model.h5")
+    model = ChatbotModel(len(words), 128, len(classes))
+    model.load_state_dict(torch.load("chatbot_model.pth"))
+    model.eval()
 
     return words, classes, intents, model
+
+    return words, classes, intents, model
+
+class ChatbotModel(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(ChatbotModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.dropout = nn.Dropout(0.5)
+        self.fc2 = nn.Linear(hidden_size, hidden_size // 2)
+        self.fc3 = nn.Linear(hidden_size // 2, output_size)
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = torch.relu(self.fc2(x))
+        x = self.dropout(x)
+        x = self.fc3(x)
+        x = self.softmax(x)
+        return x
 
 def clean_sentence(sentence):
     sentence_words = nltk.word_tokenize(sentence)
@@ -52,7 +73,7 @@ def predict_class(user_msg, words, classes, model):
             if word == w:
                 bag[i] = 1
 
-    res = model.predict(np.array([bag]))[0]
+    res = model(torch.tensor([bag], dtype=torch.float))[0].detach().numpy()
     ERROR_THRESHOLD = 0.25
     results = [[i, r] for i, r in enumerate(res) if r > ERROR_THRESHOLD]
 

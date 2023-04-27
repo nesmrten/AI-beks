@@ -16,9 +16,9 @@ document.addEventListener("DOMContentLoaded", function () {
             fetch("/get", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
+                    "Content-Type": "application/json"
                 },
-                body: "msg=" + encodeURIComponent(userMsg)
+                body: JSON.stringify({ user_input: userMsg })
             })
             
                 .then(response => response.json())

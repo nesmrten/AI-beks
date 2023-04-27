@@ -1,11 +1,11 @@
 import json
 import numpy as np
 import nltk
+import torch
+import torch.nn as nn
+import torch.optim as optim
 from nltk.stem import WordNetLemmatizer
 from sklearn.preprocessing import LabelBinarizer
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Activation, Dropout
-from tensorflow.keras.optimizers import SGD
 
 nltk.download("punkt")
 nltk.download("wordnet")
@@ -59,16 +59,54 @@ training = np.array(training, dtype=object)
 train_x = np.array(list(training[:, 0]))
 train_y = np.array(list(training[:, 1]))
 
-model = Sequential()
-model.add(Dense(128, input_shape=(len(train_x[0]),), activation="relu"))
-model.add(Dropout(0.5))
-model.add(Dense(64, activation="relu"))
-model.add(Dropout(0.5))
-model.add(Dense(len(train_y[0]), activation="softmax"))
+class ChatbotModel(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(ChatbotModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.dropout = nn.Dropout(0.5)
+        self.fc2 = nn.Linear(hidden_size, hidden_size // 2)
+        self.fc3 = nn.Linear(hidden_size // 2, output_size)
+        self.softmax = nn.Softmax(dim=1)
 
-sgd = SGD(lr=0.01, momentum=0.9, nesterov=True)
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = torch.relu(self.fc2(x))
+        x = self.dropout(x)
+        x = self.fc3(x)
+        x = self.softmax(x)
+        return x
 
-model.compile(loss="categorical_crossentropy", optimizer=sgd, metrics=["accuracy"])
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model.fit(train_x, train_y, epochs=200, batch_size=5, verbose=1)
-model.save("chatbot_model.h5")
+input_size = len(train_x[0])
+output_size = len(train_y[0])
+hidden_size = 128
+
+model = ChatbotModel(input_size, hidden_size, output_size).to(device)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, nesterov=True)
+
+train_x = torch.tensor(train_x, dtype=torch.float32).to(device)
+train_y = torch.tensor(train_y, dtype=torch.long).to(device)
+
+epochs = 200
+batch_size = 5
+
+for epoch in range(epochs):
+    for i in range(0, len(train_x), batch_size):
+        batch_x = train_x[i:i + batch_size]
+        batch_y = train_y[i:i + batch_size]
+
+        optimizer.zero_grad()
+        outputs = model(batch_x)
+        loss = criterion(outputs, torch.max(batch_y, 1)[1])
+        loss.backward()
+        optimizer.step()
+
+    if (epoch + 1) % 10 == 0:
+        print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
+
+torch.save(model.state_dict(), "chatbot_model.pth")
+       

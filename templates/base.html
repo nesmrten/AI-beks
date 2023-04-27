@@ -10,8 +10,8 @@
   <body>
     <nav>
       <ul>
-        <li><a href="{{ url_for('home') }}">Home</a></li>
-        <li><a href="{{ url_for('chat') }}">Chat</a></li>
+        <li><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li><a href="{{ url_for('main.chat') }}">Chat</a></li>
       </ul>
     </nav>
     {% block content %}{% endblock %}
