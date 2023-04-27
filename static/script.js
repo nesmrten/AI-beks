@@ -1,8 +1,8 @@
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function() {
     let form = document.getElementById("user-input-form");
     let input = document.getElementById("user-input");
 
-    form.addEventListener("submit", function (event) {
+    form.addEventListener("submit", function(event) {
         event.preventDefault();
         let userMsg = input.value.trim();
         if (userMsg === "") {
@@ -19,13 +19,13 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             body: "msg=" + encodeURIComponent(userMsg)
         })
-            .then(response => response.json())
-            .then(data => {
-                appendMessage("chatbot-msg", data["response"]);
-            })
-            .catch(error => {
-                console.error("Error fetching chatbot response:", error);
-            });
+        .then(response => response.json())
+        .then(data => {
+            appendMessage("chatbot-msg", data["response"]);
+        })
+        .catch(error => {
+            console.error("Error fetching chatbot response:", error);
+        });
     });
 
     function appendMessage(className, textContent) {

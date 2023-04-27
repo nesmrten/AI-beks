@@ -1,5 +1,7 @@
 import os
 
-SECRET_KEY = 'Stargatesg-1aio!#$'
-SQLALCHEMY_DATABASE_URI = 'sqlite:///db.sqlite3'
-SQLALCHEMY_TRACK_MODIFICATIONS = False
+class Config:
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'Stargatesg-1aio!"#'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///users.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False

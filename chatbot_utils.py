@@ -1,10 +1,9 @@
-from torch import nn
-from train_chatbot import ChatbotModel
 import numpy as np
 import nltk
 from nltk.stem import WordNetLemmatizer
 import json
-import torch
+import pickle
+import keras
 import random
 from web_scraper import search
 
@@ -14,39 +13,16 @@ def load_data():
     with open("intents.json", "r") as file:
         intents = json.load(file)
 
-    with open("words.json", "r") as file:
-        words = json.load(file)
+    with open("words.pkl", "rb") as f: 
+      words = pickle.load(f)
 
-    with open("classes.json", "r") as file:
-        classes = json.load(file)
-
+    with open("classes.pkl", "rb") as f: 
+      classes = pickle.load(f)
+      
     # Load the saved model
-    model = ChatbotModel(len(words), 128, len(classes))
-    model.load_state_dict(torch.load("chatbot_model.pth"))
-    model.eval()
+    model = keras.models.load_model("chatbot_model.h5")
 
     return words, classes, intents, model
-
-    return words, classes, intents, model
-
-class ChatbotModel(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super(ChatbotModel, self).__init__()
-        self.hidden_size = hidden_size
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.dropout = nn.Dropout(0.5)
-        self.fc2 = nn.Linear(hidden_size, hidden_size // 2)
-        self.fc3 = nn.Linear(hidden_size // 2, output_size)
-        self.softmax = nn.Softmax(dim=1)
-
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = self.dropout(x)
-        x = torch.relu(self.fc2(x))
-        x = self.dropout(x)
-        x = self.fc3(x)
-        x = self.softmax(x)
-        return x
 
 def clean_sentence(sentence):
     sentence_words = nltk.word_tokenize(sentence)
@@ -73,7 +49,7 @@ def predict_class(user_msg, words, classes, model):
             if word == w:
                 bag[i] = 1
 
-    res = model(torch.tensor([bag], dtype=torch.float))[0].detach().numpy()
+    res = model.predict(np.array([bag]))[0]
     ERROR_THRESHOLD = 0.25
     results = [[i, r] for i, r in enumerate(res) if r > ERROR_THRESHOLD]
 

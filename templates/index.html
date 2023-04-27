@@ -1,13 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI-BEKS</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-    <h1>Welcome to AI-BEKS!</h1>
-    <p><a href="/chat">Click here to start chatting!</a></p>
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+  </nav>
+  <div id="avatar-container" style="width: 300px; height: 300px;"></div>
+  <h1>AI Chatbot</h1>
+  <div id="chatbox">
+    <div class="chatbot-msg">
+      Welcome to the AI Chatbot! How can I assist you?
+    </div>
+  </div>
+  <form id="user-input-form">
+    <input type="text" id="user-input" placeholder="Enter your message" autocomplete="off" required />
+    <button type="submit">Send</button>
+  </form>
+</div>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% endblock %}

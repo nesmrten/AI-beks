@@ -16,11 +16,10 @@ document.addEventListener("DOMContentLoaded", function () {
             fetch("/get", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/x-www-form-urlencoded"
                 },
-                body: JSON.stringify({ user_input: userMsg })
+                body: "msg=" + encodeURIComponent(userMsg)
             })
-            
                 .then(response => response.json())
                 .then(data => {
                     appendMessage("chatbot-msg", data["response"]);
